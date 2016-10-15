@@ -3,7 +3,82 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
+	"github.com/rackspace/gophercloud"
+	"github.com/rackspace/gophercloud/openstack"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 )
+
+
+type TunirVM struct {
+	IP string
+	Hostname string
+	Port string
+	KeyFile string
+}
+
+func BootInstanceOS() (TunirVM, error) {
+	tvm := TunirVM{}
+	// If no config is found, use the default(s)
+	viper.SetDefault("OS_REGION_NAME", "RegionOne")
+	viper.SetDefault("OS_FLAVOR", "m1.medium")
+
+
+	opts := gophercloud.AuthOptions{
+		IdentityEndpoint: viper.GetString("OS_AUTH_URL"),
+		Username:         viper.GetString("OS_USERNAME"),
+		Password:         viper.GetString("OS_PASSWORD"),
+		TenantID:         viper.GetString("OS_TENANT_ID"),
+	}
+	region := viper.GetString("OS_REGION_NAME")
+	provider, err := openstack.AuthenticatedClient(opts)
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: region})
+
+
+	vmflavor := viper.GetString("OS_FLAVOR")
+	imagename := viper.GetString("OS_IMAGE")
+	network_id := viper.GetString("OS_NETWORK")
+	floating_pool := viper.GetString("OS_FLOATING_POOL")
+	keypair := viper.GetString("OS_KEYPAIR")
+	security_groups := viper.GetStringSlice("OS_SECURITY_GROUPS")
+
+	sOpts := servers.CreateOpts{
+		Name:           "gotun",
+		FlavorName:     vmflavor,
+		ImageName:      imagename,
+		SecurityGroups: security_groups,
+	}
+	sOpts.Networks = []servers.Network{
+		{
+			UUID: network_id,
+		},
+	}
+
+	server, err := servers.Create(client, keypairs.CreateOptsExt{
+		sOpts,
+		keypair,
+	}).Extract()
+	if err != nil {
+		fmt.Println("Unable to create server: %s", err)
+		return tvm, err
+	}
+	fmt.Printf("Server ID: %s booted.", server.ID)
+	//TODO: Wait for status here
+	fmt.Println("Time to assign a floating pointip.")
+	fp, err := floatingip.Create(client, floatingip.CreateOpts{Pool: floating_pool}).Extract()
+	fmt.Println(fp)
+	// Now let us assign
+	floatingip.AssociateInstance(client, floatingip.AssociateOpts{
+		ServerID: server.ID,
+		FloatingIP: fp.IP,
+	})
+	tvm.IP = fp.IP
+	tvm.Port = "22"
+	return tvm, nil
+
+}
 
 func main() {
 	viper.SetConfigName("config")
@@ -14,6 +89,11 @@ func main() {
 		fmt.Println("No configuration file loaded - using defaults")
 	}
 
-	backend := viper.GetString("backend")
+	backend := viper.GetString("BACKEND")
 	fmt.Println(backend)
+	if backend == "openstack" {
+		vm, _ := BootInstanceOS()
+		fmt.Println(vm)
+	}
+
 }
