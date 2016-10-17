@@ -8,6 +8,7 @@ import (
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -17,6 +18,8 @@ import (
 
 type TVM interface {
 	Delete() error
+	FromKeyFile() ssh.AuthMethod
+	GetDetails() (string, string)
 }
 
 type TunirVM struct {
@@ -31,6 +34,24 @@ type TunirVM struct {
 func (t TunirVM) Delete() error {
 	res := servers.Delete(t.Client, t.Server.ID)
 	return res.ExtractErr()
+}
+
+func (t TunirVM) FromKeyFile() ssh.AuthMethod {
+	file := t.KeyFile
+	buffer, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil
+	}
+
+	key, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		return nil
+	}
+	return ssh.PublicKeys(key)
+}
+
+func (t TunirVM) GetDetails() (string, string) {
+	return t.IP, t.Port
 }
 
 func BootInstanceOS() (TVM, error) {
@@ -104,10 +125,22 @@ func ReadCommands(filename string) []string {
 	return strings.Split(string(data), "\n")
 }
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func ExecuteTests(commands []string, vm TVM) {
 	var actualcommand string
 	vmr, _ := regexp.Compile("^vm[0-9] ")
-
+	ip, port := vm.GetDetails()
+	sshConfig := &ssh.ClientConfig{
+		User: "fedora",
+		Auth: []ssh.AuthMethod{
+			vm.FromKeyFile(),
+		},
+	}
 	for i := range(commands) {
 		command := commands[i]
 		if command != "" {
@@ -116,6 +149,7 @@ func ExecuteTests(commands []string, vm TVM) {
 				fmt.Println("Sleeping for ", d)
 				t, _ := strconv.ParseInt(d, 10, 64)
 				time.Sleep(time.Duration(t) * time.Second)
+				continue
 			}
 			if vmr.MatchString(command) {
 				fmt.Println("Match.")
@@ -125,7 +159,20 @@ func ExecuteTests(commands []string, vm TVM) {
 			} else {
 				actualcommand = command
 			}
-			fmt.Println(actualcommand)
+			}
+
+			connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
+			check(err)
+			session, err := connection.NewSession()
+			check(err)
+			defer session.Close()
+			output, err := session.CombinedOutput(actualcommand)
+			if err != nil {
+				fmt.Println(err)
+				fmt.Println(string(output))
+			} else {
+				fmt.Println(string(output))
+			}
 
 		}
 
@@ -146,7 +193,7 @@ func main() {
 	ip := viper.GetString("IP")
 	key := viper.GetString("key")
 	fmt.Println(backend)
-	vm = TunirVM{IP: ip, KeyFile:key,
+	vm = TunirVM{IP: ip, KeyFile: key,
 		Port: "22"}
 	/*if backend == "openstack" {
 		vm, _ = BootInstanceOS()
