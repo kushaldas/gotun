@@ -8,6 +8,8 @@ import (
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"io/ioutil"
+	"strings"
 )
 
 type TVM interface {
@@ -94,7 +96,21 @@ func BootInstanceOS() (TVM, error) {
 
 }
 
+func ReadCommands(filename string) []string {
+	data, _ := ioutil.ReadFile(filename)
+	return strings.Split(string(data), "\n")
+}
+
+func ExecuteTests(commands []string, vm TVM) {
+	for i := range(commands) {
+		command := commands[i]
+		fmt.Println(command)
+
+	}
+}
+
 func main() {
+	var vm TVM
 	viper.SetConfigName("config")
 	viper.AddConfigPath("./")
 	err := viper.ReadInConfig()
@@ -104,10 +120,17 @@ func main() {
 	}
 
 	backend := viper.GetString("BACKEND")
+	ip := viper.GetString("IP")
+	key := viper.GetString("key")
 	fmt.Println(backend)
-	if backend == "openstack" {
-		vm, _ := BootInstanceOS()
+	vm = TunirVM{IP: ip, KeyFile:key,
+		Port: "22"}
+	/*if backend == "openstack" {
+		vm, _ = BootInstanceOS()
 		fmt.Println(vm)
 	}
+*/	commands := ReadCommands("./commands.txt")
+	ExecuteTests(commands, vm)
+
 
 }
