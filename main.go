@@ -10,6 +10,8 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
 	"strings"
+	"time"
+	"strconv"
 )
 
 type TVM interface {
@@ -104,7 +106,15 @@ func ReadCommands(filename string) []string {
 func ExecuteTests(commands []string, vm TVM) {
 	for i := range(commands) {
 		command := commands[i]
-		fmt.Println(command)
+		if command != "" {
+			if strings.HasPrefix(command, "SLEEP") {
+				d := strings.Split(command, " ")[1]
+				fmt.Println("Sleeping for ", d)
+				t, _ := strconv.ParseInt(d, 10, 64)
+				time.Sleep(time.Duration(t) * time.Second)
+			}
+			fmt.Println(command)
+		}
 
 	}
 }
