@@ -64,8 +64,10 @@ func BootInstanceOS() (TunirVM, error) {
 		fmt.Println("Unable to create server: %s", err)
 		return tvm, err
 	}
-	fmt.Printf("Server ID: %s booted.", server.ID)
+	fmt.Printf("Server ID: %s booted.\n", server.ID)
 	//TODO: Wait for status here
+	fmt.Println("Let us wait for the server to be in running state.")
+	servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
 	fmt.Println("Time to assign a floating pointip.")
 	fp, err := floatingip.Create(client, floatingip.CreateOpts{Pool: floating_pool}).Extract()
 	fmt.Println(fp)
