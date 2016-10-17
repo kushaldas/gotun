@@ -10,16 +10,26 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 )
 
+type TVM interface {
+	Delete() error
+}
 
 type TunirVM struct {
 	IP string
 	Hostname string
 	Port string
 	KeyFile string
+	Client *gophercloud.ServiceClient
+	Server *servers.Server
 }
 
-func BootInstanceOS() (TunirVM, error) {
-	tvm := TunirVM{}
+func (t TunirVM) Delete() error {
+	res := servers.Delete(t.Client, t.Server.ID)
+	return res.ExtractErr()
+}
+
+func BootInstanceOS() (TVM, error) {
+	var tvm TunirVM
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
@@ -64,6 +74,8 @@ func BootInstanceOS() (TunirVM, error) {
 		fmt.Println("Unable to create server: %s", err)
 		return tvm, err
 	}
+	tvm.Server = server
+	tvm.Client = client
 	fmt.Printf("Server ID: %s booted.\n", server.ID)
 	//TODO: Wait for status here
 	fmt.Println("Let us wait for the server to be in running state.")
