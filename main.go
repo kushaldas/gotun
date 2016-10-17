@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"strconv"
+	"regexp"
 )
 
 type TVM interface {
@@ -104,6 +105,9 @@ func ReadCommands(filename string) []string {
 }
 
 func ExecuteTests(commands []string, vm TVM) {
+	var actualcommand string
+	vmr, _ := regexp.Compile("^vm[0-9] ")
+
 	for i := range(commands) {
 		command := commands[i]
 		if command != "" {
@@ -113,7 +117,16 @@ func ExecuteTests(commands []string, vm TVM) {
 				t, _ := strconv.ParseInt(d, 10, 64)
 				time.Sleep(time.Duration(t) * time.Second)
 			}
-			fmt.Println(command)
+			if vmr.MatchString(command) {
+				fmt.Println("Match.")
+				parts := strings.Split(command, " ")
+				actualcommand = strings.Join(parts[1:], " ")
+
+			} else {
+				actualcommand = command
+			}
+			fmt.Println(actualcommand)
+
 		}
 
 	}
