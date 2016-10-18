@@ -17,10 +17,15 @@ import (
 	"os"
 )
 
-type ResultSet struct {
+type TunirResult struct {
 	Output string
 	Status bool
 	Command string
+}
+
+type ResultSet struct {
+	Results []TunirResult
+	Status bool // Whole status of the job
 }
 
 type TVM interface {
@@ -127,7 +132,7 @@ func BootInstanceOS() (TVM, error) {
 
 }
 
-func printResultSet(result []ResultSet, status bool) {
+func printResultSet(result []TunirResult, status bool) {
 	fmt.Printf("\n\nJob status: %v\n\n", status)
 	for _,value := range result {
 		fmt.Printf("command: %s\n", value.Command)
@@ -147,12 +152,13 @@ func check(e error) {
 	}
 }
 
-func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
+func ExecuteTests(commands []string, vm TVM) ResultSet {
 	var actualcommand string
 	var willfail, dontcare bool
 	var parts []string
 
-	result := make([]ResultSet,0)
+	FinalResult := ResultSet{}
+	result := make([]TunirResult,0)
 
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	ip, port := vm.GetDetails()
@@ -205,7 +211,7 @@ func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
 		defer session.Close()
 		fmt.Println("Executing: ", actualcommand)
 		output, err := session.CombinedOutput(actualcommand)
-		rf := ResultSet{Output: string(output), Command: actualcommand}
+		rf := TunirResult{Output: string(output), Command: actualcommand}
 		if err != nil {
 
 			rf.Status = false
@@ -215,7 +221,9 @@ func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
 			} else {
 				fmt.Println("We are here")
 				result = append(result, rf)
-				return result, false
+				FinalResult.Status = false
+				FinalResult.Results = result
+				return FinalResult
 			}
 		} else {
 			rf.Status = true
@@ -223,7 +231,9 @@ func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
 		result = append(result, rf)
 
 	}
-	return result, true
+	FinalResult.Status = true
+	FinalResult.Results = result
+	return FinalResult
 
 
 }
@@ -249,9 +259,9 @@ func main() {
 		fmt.Println(vm)
 	}
 */	commands := ReadCommands("./commands.txt")
-	result, status := ExecuteTests(commands, vm)
-	printResultSet(result, status)
-	if !status {
+	result := ExecuteTests(commands, vm)
+	printResultSet(result.Results, result.Status)
+	if !result.Status {
 		os.Exit(200)
 	}
 	os.Exit(0)
