@@ -26,6 +26,9 @@ type TunirResult struct {
 type ResultSet struct {
 	Results []TunirResult
 	Status bool // Whole status of the job
+	TotalTests int
+	TotalNonGatingTests int
+	TotalFailedNonGatingTests int
 }
 
 type TVM interface {
@@ -132,13 +135,18 @@ func BootInstanceOS() (TVM, error) {
 
 }
 
-func printResultSet(result []TunirResult, status bool) {
+func printResultSet(result ResultSet) {
+	status := result.Status
+	results := result.Results
 	fmt.Printf("\n\nJob status: %v\n\n", status)
-	for _,value := range result {
+	for _,value := range results {
 		fmt.Printf("command: %s\n", value.Command)
 		fmt.Printf("status:%v\n\n", value.Status)
 		fmt.Println(value.Output)
 	}
+
+	fmt.Printf("\n\nTotal Number of Tests:%d\nTotal NonGating Tests:%d\nTotal Failed Non Gating Tests:%d\n",
+		result.TotalTests, result.TotalNonGatingTests, result.TotalFailedNonGatingTests)
 }
 
 func ReadCommands(filename string) []string {
@@ -211,16 +219,23 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		defer session.Close()
 		fmt.Println("Executing: ", actualcommand)
 		output, err := session.CombinedOutput(actualcommand)
+		FinalResult.TotalTests += 1
+		if dontcare {
+			FinalResult.TotalNonGatingTests += 1
+		}
 		rf := TunirResult{Output: string(output), Command: actualcommand}
 		if err != nil {
 
 			rf.Status = false
 			if willfail || dontcare {
 				result = append(result, rf)
+				if dontcare {
+					FinalResult.TotalFailedNonGatingTests += 1
+				}
 				continue
 			} else {
-				fmt.Println("We are here")
 				result = append(result, rf)
+				FinalResult.TotalTests += 1
 				FinalResult.Status = false
 				FinalResult.Results = result
 				return FinalResult
@@ -229,6 +244,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 			rf.Status = true
 		}
 		result = append(result, rf)
+
 
 	}
 	FinalResult.Status = true
@@ -260,7 +276,7 @@ func main() {
 	}
 */	commands := ReadCommands("./commands.txt")
 	result := ExecuteTests(commands, vm)
-	printResultSet(result.Results, result.Status)
+	printResultSet(result)
 	if !result.Status {
 		os.Exit(200)
 	}
