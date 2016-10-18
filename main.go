@@ -14,6 +14,7 @@ import (
 	"time"
 	"strconv"
 	"regexp"
+	"os"
 )
 
 type TVM interface {
@@ -133,6 +134,8 @@ func check(e error) {
 
 func ExecuteTests(commands []string, vm TVM) {
 	var actualcommand string
+	var willfail, dontcare bool
+	var parts []string
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
@@ -142,8 +145,11 @@ func ExecuteTests(commands []string, vm TVM) {
 		},
 	}
 	for i := range(commands) {
+		willfail = false
+		dontcare = false
 		command := commands[i]
 		if command != "" {
+			fmt.Println(command)
 			if strings.HasPrefix(command, "SLEEP") {
 				d := strings.Split(command, " ")[1]
 				fmt.Println("Sleeping for ", d)
@@ -152,31 +158,52 @@ func ExecuteTests(commands []string, vm TVM) {
 				continue
 			}
 			if vmr.MatchString(command) {
-				fmt.Println("Match.")
-				parts := strings.Split(command, " ")
+				parts = strings.Split(command, " ")
 				actualcommand = strings.Join(parts[1:], " ")
 
 			} else {
 				actualcommand = command
 			}
+			parts = strings.Split(actualcommand, " ")
+			if parts[0] == "@@" {
+				willfail = true
+				actualcommand = strings.Join(parts[1:], " ")
+
+			} else if parts[0] == "##" {
+				dontcare = true
+				actualcommand = strings.Join(parts[1:], " ")
+
 			}
 
-			connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
-			check(err)
-			session, err := connection.NewSession()
-			check(err)
-			defer session.Close()
-			output, err := session.CombinedOutput(actualcommand)
-			if err != nil {
-				fmt.Println(err)
-				fmt.Println(string(output))
+		} else {
+			// stupid code, revert the if else
+			continue
+		}
+
+		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
+		check(err)
+		session, err := connection.NewSession()
+		check(err)
+		defer session.Close()
+		fmt.Println("Executing: ", actualcommand)
+		output, err := session.CombinedOutput(actualcommand)
+		if err != nil {
+
+			fmt.Println(err)
+			fmt.Println(string(output))
+			if willfail || dontcare {
+				continue
 			} else {
-				fmt.Println(string(output))
+				fmt.Println(i, command)
+				os.Exit(100)
 			}
-
+		} else {
+			fmt.Println(string(output))
 		}
 
 	}
+
+
 }
 
 func main() {
@@ -201,6 +228,5 @@ func main() {
 	}
 */	commands := ReadCommands("./commands.txt")
 	ExecuteTests(commands, vm)
-
-
+	os.Exit(0)
 }
