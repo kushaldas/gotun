@@ -265,16 +265,16 @@ func main() {
 	}
 
 	backend := viper.GetString("BACKEND")
-	ip := viper.GetString("IP")
-	key := viper.GetString("key")
-	fmt.Println(backend)
-	vm = TunirVM{IP: ip, KeyFile: key,
-		Port: "22"}
-	/*if backend == "openstack" {
+
+
+	if backend == "openstack" {
 		vm, _ = BootInstanceOS()
 		fmt.Println(vm)
+	} else if backend == "bare" {
+		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
+		Port: "22"}
 	}
-*/	commands := ReadCommands("./commands.txt")
+	commands := ReadCommands("./commands.txt")
 	result := ExecuteTests(commands, vm)
 	printResultSet(result)
 	if !result.Status {
