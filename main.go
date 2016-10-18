@@ -127,6 +127,15 @@ func BootInstanceOS() (TVM, error) {
 
 }
 
+func printResultSet(result []ResultSet, status bool) {
+	fmt.Printf("\n\nJob status: %v\n\n", status)
+	for _,value := range result {
+		fmt.Printf("command: %s\n", value.Command)
+		fmt.Printf("status:%v\n\n", value.Status)
+		fmt.Println(value.Output)
+	}
+}
+
 func ReadCommands(filename string) []string {
 	data, _ := ioutil.ReadFile(filename)
 	return strings.Split(string(data), "\n")
@@ -200,10 +209,11 @@ func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
 		if err != nil {
 
 			rf.Status = false
-			fmt.Println(err)
 			if willfail || dontcare {
+				result = append(result, rf)
 				continue
 			} else {
+				fmt.Println("We are here")
 				result = append(result, rf)
 				return result, false
 			}
@@ -239,10 +249,10 @@ func main() {
 		fmt.Println(vm)
 	}
 */	commands := ReadCommands("./commands.txt")
-	result, status :=ExecuteTests(commands, vm)
-	fmt.Println(status)
-	for _,value := range result {
-		fmt.Println(value.Output)
+	result, status := ExecuteTests(commands, vm)
+	printResultSet(result, status)
+	if !status {
+		os.Exit(200)
 	}
 	os.Exit(0)
 }
