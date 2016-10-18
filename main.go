@@ -140,9 +140,9 @@ func printResultSet(result ResultSet) {
 	fmt.Println("\nResult file at:", file.Name())
 	status := result.Status
 	results := result.Results
-	fmt.Printf("\n\nJob status: %v\n\n", status)
+	fmt.Printf("\n\nJob status: %v\n", status)
 	for _,value := range results {
-		output := fmt.Sprintf("command: %s\nstatus:%v\n\n%s", value.Command, value.Status, value.Output)
+		output := fmt.Sprintf("\n\ncommand: %s\nstatus:%v\n\n%s", value.Command, value.Status, value.Output)
 		fmt.Printf(output)
 		file.WriteString(output)
 	}
@@ -189,7 +189,6 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		dontcare = false
 		command := commands[i]
 		if command != "" {
-			fmt.Println(command)
 			if strings.HasPrefix(command, "SLEEP") {
 				d := strings.Split(command, " ")[1]
 				fmt.Println("Sleeping for ", d)
@@ -274,7 +273,7 @@ func main() {
 
 	viper.SetDefault("PORT", "22")
 	backend := viper.GetString("BACKEND")
-	fmt.Println("Starts a new Tunir Job.")
+	fmt.Println("Starts a new Tunir Job.\n")
 
 	if backend == "openstack" {
 		vm, _ = BootInstanceOS()
