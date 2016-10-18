@@ -2,35 +2,35 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud"
-	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
 	"github.com/rackspace/gophercloud/openstack"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
+	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"strings"
-	"time"
-	"strconv"
-	"regexp"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TunirResult struct {
-	Output string
-	Status bool
+	Output  string
+	Status  bool
 	Command string
 }
 
 type ResultSet struct {
-	Results []TunirResult
-	Status bool // Whole status of the job
-	TotalTests int
-	TotalNonGatingTests int
+	Results                   []TunirResult
+	Status                    bool // Whole status of the job
+	TotalTests                int
+	TotalNonGatingTests       int
 	TotalFailedNonGatingTests int
 }
 
@@ -41,12 +41,12 @@ type TVM interface {
 }
 
 type TunirVM struct {
-	IP string
+	IP       string
 	Hostname string
-	Port string
-	KeyFile string
-	Client *gophercloud.ServiceClient
-	Server *servers.Server
+	Port     string
+	KeyFile  string
+	Client   *gophercloud.ServiceClient
+	Server   *servers.Server
 }
 
 func (t TunirVM) Delete() error {
@@ -78,7 +78,6 @@ func BootInstanceOS() (TVM, error) {
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
 
-
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: viper.GetString("OS_AUTH_URL"),
 		Username:         viper.GetString("OS_USERNAME"),
@@ -89,7 +88,6 @@ func BootInstanceOS() (TVM, error) {
 	provider, err := openstack.AuthenticatedClient(opts)
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: region})
-
 
 	vmflavor := viper.GetString("OS_FLAVOR")
 	imagename := viper.GetString("OS_IMAGE")
@@ -106,9 +104,9 @@ func BootInstanceOS() (TVM, error) {
 			Region: region,
 		})
 		createResult := images.Create(c, images.CreateOpts{Name: imageName,
-					Properties:      prop,
-					ContainerFormat: "bare",
-					DiskFormat:      containerFormat})
+			Properties:      prop,
+			ContainerFormat: "bare",
+			DiskFormat:      containerFormat})
 		image, err := createResult.Extract()
 		check(err)
 		image, err = images.Get(c, image.ID).Extract()
@@ -161,7 +159,7 @@ func BootInstanceOS() (TVM, error) {
 	fmt.Println(fp)
 	// Now let us assign
 	floatingip.AssociateInstance(client, floatingip.AssociateOpts{
-		ServerID: server.ID,
+		ServerID:   server.ID,
 		FloatingIP: fp.IP,
 	})
 	tvm.IP = fp.IP
@@ -183,13 +181,12 @@ func Poll(timeout int, vm TVM) bool {
 	start := time.Now().Second()
 	for {
 
-
 		fmt.Println("Polling for a successful ssh connection.")
 		time.Sleep(5 * time.Second)
 		currenttime := time.Now().Second() - start
 		fmt.Println(currenttime)
 		// Check for timeout
-		if timeout >= 0 &&  currenttime >= timeout {
+		if timeout >= 0 && currenttime >= timeout {
 			return false
 		}
 
@@ -216,7 +213,7 @@ func printResultSet(result ResultSet) {
 	status := result.Status
 	results := result.Results
 	fmt.Printf("\n\nJob status: %v\n", status)
-	for _,value := range results {
+	for _, value := range results {
 		output := fmt.Sprintf("\n\ncommand: %s\nstatus:%v\n\n%s", value.Command, value.Status, value.Output)
 		fmt.Printf(output)
 		file.WriteString(output)
@@ -251,7 +248,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 	var session *ssh.Session
 
 	FinalResult := ResultSet{}
-	result := make([]TunirResult,0)
+	result := make([]TunirResult, 0)
 
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	ip, port := vm.GetDetails()
@@ -262,7 +259,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		},
 	}
 
-	for i := range(commands) {
+	for i := range commands {
 		willfail = false
 		dontcare = false
 		command := commands[i]
@@ -314,7 +311,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		if dontcare {
 			FinalResult.TotalNonGatingTests += 1
 		}
-		ERROR1:
+	ERROR1:
 		rf := TunirResult{Output: string(output), Command: actualcommand}
 		if err != nil {
 
@@ -337,12 +334,10 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		}
 		result = append(result, rf)
 
-
 	}
 	FinalResult.Status = true
 	FinalResult.Results = result
 	return FinalResult
-
 
 }
 
@@ -375,7 +370,7 @@ func starthere(jobname, config_dir string) {
 		}
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
-		Port: viper.GetString("PORT")}
+			Port: viper.GetString("PORT")}
 	}
 	commands := ReadCommands(commandfile)
 	result := ExecuteTests(commands, vm)
@@ -412,10 +407,10 @@ func createApp() *cli.App {
 		file_path := c.GlobalString("job")
 		config_dir := c.GlobalString("config-dir")
 		if config_dir == "" {
-			config_dir  = "./"
+			config_dir = "./"
 		}
 		if file_path != "" {
-			starthere(file_path, config_dir )
+			starthere(file_path, config_dir)
 		}
 		return nil
 	}
