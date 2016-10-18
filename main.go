@@ -169,8 +169,8 @@ func BootInstanceOS() (TVM, error) {
 
 }
 
-//TODO: Fix this please. Currently fails with panic
-func Poll(timeout int, vm TVM) bool {
+
+func Poll(timeout int64, vm TVM) bool {
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
 		User: "fedora",
@@ -178,15 +178,15 @@ func Poll(timeout int, vm TVM) bool {
 			vm.FromKeyFile(),
 		},
 	}
-	start := time.Now().Second()
+	start := time.Now().Unix()
 	for {
 
 		fmt.Println("Polling for a successful ssh connection.")
 		time.Sleep(5 * time.Second)
-		currenttime := time.Now().Second() - start
-		fmt.Println(currenttime)
+		currenttime := time.Now().Unix()
+		difftime := currenttime - start
 		// Check for timeout
-		if timeout >= 0 && currenttime >= timeout {
+		if timeout >= 0 && difftime >= timeout {
 			return false
 		}
 
