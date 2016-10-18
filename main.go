@@ -136,13 +136,15 @@ func BootInstanceOS() (TVM, error) {
 }
 
 func printResultSet(result ResultSet) {
+	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
+	fmt.Println("\nResult file at:", file.Name())
 	status := result.Status
 	results := result.Results
 	fmt.Printf("\n\nJob status: %v\n\n", status)
 	for _,value := range results {
-		fmt.Printf("command: %s\n", value.Command)
-		fmt.Printf("status:%v\n\n", value.Status)
-		fmt.Println(value.Output)
+		output := fmt.Sprintf("command: %s\nstatus:%v\n\n%s", value.Command, value.Status, value.Output)
+		fmt.Printf(output)
+		file.WriteString(output)
 	}
 
 	fmt.Printf("\n\nTotal Number of Tests:%d\nTotal NonGating Tests:%d\nTotal Failed Non Gating Tests:%d\n",
