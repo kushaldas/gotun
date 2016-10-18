@@ -17,6 +17,12 @@ import (
 	"os"
 )
 
+type ResultSet struct {
+	Output string
+	Status bool
+	Command string
+}
+
 type TVM interface {
 	Delete() error
 	FromKeyFile() ssh.AuthMethod
@@ -132,10 +138,13 @@ func check(e error) {
 	}
 }
 
-func ExecuteTests(commands []string, vm TVM) {
+func ExecuteTests(commands []string, vm TVM) ([]ResultSet, bool) {
 	var actualcommand string
 	var willfail, dontcare bool
 	var parts []string
+
+	result := make([]ResultSet,0)
+
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
@@ -187,21 +196,24 @@ func ExecuteTests(commands []string, vm TVM) {
 		defer session.Close()
 		fmt.Println("Executing: ", actualcommand)
 		output, err := session.CombinedOutput(actualcommand)
+		rf := ResultSet{Output: string(output), Command: actualcommand}
 		if err != nil {
 
+			rf.Status = false
 			fmt.Println(err)
-			fmt.Println(string(output))
 			if willfail || dontcare {
 				continue
 			} else {
-				fmt.Println(i, command)
-				os.Exit(100)
+				result = append(result, rf)
+				return result, false
 			}
 		} else {
-			fmt.Println(string(output))
+			rf.Status = true
 		}
+		result = append(result, rf)
 
 	}
+	return result, true
 
 
 }
@@ -227,6 +239,10 @@ func main() {
 		fmt.Println(vm)
 	}
 */	commands := ReadCommands("./commands.txt")
-	ExecuteTests(commands, vm)
+	result, status :=ExecuteTests(commands, vm)
+	fmt.Println(status)
+	for _,value := range result {
+		fmt.Println(value.Output)
+	}
 	os.Exit(0)
 }
