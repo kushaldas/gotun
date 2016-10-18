@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud"
+	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
@@ -92,6 +93,38 @@ func BootInstanceOS() (TVM, error) {
 
 	vmflavor := viper.GetString("OS_FLAVOR")
 	imagename := viper.GetString("OS_IMAGE")
+	// Now let us find if we have to upload an image
+	if strings.HasPrefix(imagename, "/") {
+		// We have a qcow2 file, let us upload.
+		fmt.Printf("Uploading %s to the server.\n", imagename)
+		basename := filepath.Base(imagename)
+		imageName := fmt.Sprintf("tunir-%s", basename)
+		containerFormat := "qcow2"
+		prop := make(map[string]string)
+		prop["architecture"] = "x86_64"
+		c, _ := openstack.NewImageServiceV2(provider, gophercloud.EndpointOpts{
+			Region: region,
+		})
+		createResult := images.Create(c, images.CreateOpts{Name: imageName,
+					Properties:      prop,
+					ContainerFormat: "bare",
+					DiskFormat:      containerFormat})
+		image, err := createResult.Extract()
+		check(err)
+		image, err = images.Get(c, image.ID).Extract()
+		f1, err := os.Open(imagename)
+		defer f1.Close()
+
+		putImageResult := images.Upload(c, image.ID, f1)
+
+		if putImageResult.Err != nil {
+			check(err)
+		}
+
+		// Everything okay.
+		imagename = imageName
+
+	}
 	network_id := viper.GetString("OS_NETWORK")
 	floating_pool := viper.GetString("OS_FLOATING_POOL")
 	keypair := viper.GetString("OS_KEYPAIR")
@@ -119,7 +152,7 @@ func BootInstanceOS() (TVM, error) {
 	}
 	tvm.Server = server
 	tvm.Client = client
-	fmt.Printf("Server ID: %s booted.\n", server.ID)
+	fmt.Printf("Server ID: %s\n", server.ID)
 	//TODO: Wait for status here
 	fmt.Println("Let us wait for the server to be in running state.")
 	servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
@@ -132,9 +165,49 @@ func BootInstanceOS() (TVM, error) {
 		FloatingIP: fp.IP,
 	})
 	tvm.IP = fp.IP
+	tvm.KeyFile = viper.GetString("key")
 	tvm.Port = "22"
 	return tvm, nil
 
+}
+
+//TODO: Fix this please. Currently fails with panic
+func Poll(timeout int, vm TVM) bool {
+	ip, port := vm.GetDetails()
+	sshConfig := &ssh.ClientConfig{
+		User: "fedora",
+		Auth: []ssh.AuthMethod{
+			vm.FromKeyFile(),
+		},
+	}
+	start := time.Now().Second()
+	for {
+
+
+		fmt.Println("Polling for a successful ssh connection.")
+		time.Sleep(5 * time.Second)
+		currenttime := time.Now().Second() - start
+		fmt.Println(currenttime)
+		// Check for timeout
+		if timeout >= 0 &&  currenttime >= timeout {
+			return false
+		}
+
+		// Execute the function
+		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		session, err := connection.NewSession()
+		if err != nil {
+			return false
+		}
+		session.Close()
+		return true
+
+	}
+	return false
 }
 
 func printResultSet(result ResultSet) {
@@ -174,6 +247,8 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 	var actualcommand string
 	var willfail, dontcare bool
 	var parts []string
+	var output []byte
+	var session *ssh.Session
 
 	FinalResult := ResultSet{}
 	result := make([]TunirResult,0)
@@ -186,6 +261,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 			vm.FromKeyFile(),
 		},
 	}
+
 	for i := range(commands) {
 		willfail = false
 		dontcare = false
@@ -222,16 +298,23 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 		}
 
 		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
-		check(err)
-		session, err := connection.NewSession()
-		check(err)
+		if err != nil {
+			output = []byte(err.Error())
+			goto ERROR1
+		}
+		session, err = connection.NewSession()
+		if err != nil {
+			output = []byte(err.Error())
+			goto ERROR1
+		}
 		defer session.Close()
 		fmt.Println("Executing: ", actualcommand)
-		output, err := session.CombinedOutput(actualcommand)
+		output, err = session.CombinedOutput(actualcommand)
 		FinalResult.TotalTests += 1
 		if dontcare {
 			FinalResult.TotalNonGatingTests += 1
 		}
+		ERROR1:
 		rf := TunirResult{Output: string(output), Command: actualcommand}
 		if err != nil {
 
@@ -284,13 +367,22 @@ func starthere(jobname, config_dir string) {
 
 	if backend == "openstack" {
 		vm, _ = BootInstanceOS()
-		fmt.Println(vm)
+		// First 180 seconds timeout for the vm to come up
+		res := Poll(180, vm)
+		if !res {
+			fmt.Println("Failed to ssh into the vm.")
+			panic("Failed.")
+		}
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
 		Port: viper.GetString("PORT")}
 	}
 	commands := ReadCommands(commandfile)
 	result := ExecuteTests(commands, vm)
+	if backend == "openstack" {
+		// Time to destroy the server
+		vm.Delete()
+	}
 	printResultSet(result)
 	if !result.Status {
 		os.Exit(200)
