@@ -147,6 +147,12 @@ func printResultSet(result ResultSet) {
 
 	fmt.Printf("\n\nTotal Number of Tests:%d\nTotal NonGating Tests:%d\nTotal Failed Non Gating Tests:%d\n",
 		result.TotalTests, result.TotalNonGatingTests, result.TotalFailedNonGatingTests)
+
+	if status {
+		fmt.Println("\nSuccess.")
+	} else {
+		fmt.Println("\nFailed.")
+	}
 }
 
 func ReadCommands(filename string) []string {
@@ -264,15 +270,16 @@ func main() {
 		fmt.Println("No configuration file loaded - using defaults")
 	}
 
+	viper.SetDefault("PORT", "22")
 	backend := viper.GetString("BACKEND")
-
+	fmt.Println("Starts a new Tunir Job.")
 
 	if backend == "openstack" {
 		vm, _ = BootInstanceOS()
 		fmt.Println(vm)
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
-		Port: "22"}
+		Port: viper.GetString("PORT")}
 	}
 	commands := ReadCommands("./commands.txt")
 	result := ExecuteTests(commands, vm)
