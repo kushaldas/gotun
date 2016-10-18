@@ -8,6 +8,7 @@ import (
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"strconv"
 	"regexp"
 	"os"
+	"path/filepath"
 )
 
 type TunirResult struct {
@@ -261,10 +263,15 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 
 }
 
-func main() {
+func starthere(jobname, config_dir string) {
 	var vm TVM
-	viper.SetConfigName("config")
-	viper.AddConfigPath("./")
+	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
+	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
+		fmt.Println("Missing commands file for job:", jobname)
+		os.Exit(100)
+	}
+	viper.SetConfigName(jobname)
+	viper.AddConfigPath(config_dir)
 	err := viper.ReadInConfig()
 
 	if err != nil {
@@ -282,11 +289,51 @@ func main() {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
 		Port: viper.GetString("PORT")}
 	}
-	commands := ReadCommands("./commands.txt")
+	commands := ReadCommands(commandfile)
 	result := ExecuteTests(commands, vm)
 	printResultSet(result)
 	if !result.Status {
 		os.Exit(200)
 	}
 	os.Exit(0)
+}
+
+func createApp() *cli.App {
+	app := cli.NewApp()
+	app.EnableBashCompletion = true
+	app.Name = "gotun"
+	app.Version = "0.1.0"
+	app.Usage = "The Tunir in golang."
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "job",
+			Value: "",
+			Usage: "the job name",
+		},
+		cli.StringFlag{
+			Name:  "config-dir",
+			Value: "",
+			Usage: "the directory having configuration (default current)",
+		},
+	}
+	app.Action = func(c *cli.Context) error {
+		file_path := c.GlobalString("job")
+		config_dir := c.GlobalString("config-dir")
+		if config_dir == "" {
+			config_dir  = "./"
+		}
+		if file_path != "" {
+			starthere(file_path, config_dir )
+		}
+		return nil
+	}
+
+	return app
+}
+
+func main() {
+	app := createApp()
+	if err := app.Run(os.Args); err != nil {
+		check(err)
+	}
 }
