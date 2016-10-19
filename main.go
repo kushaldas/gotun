@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 )
 
-
 func starthere(jobname, config_dir string) {
 	var vm TVM
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
