@@ -17,16 +17,26 @@ import (
 )
 
 type TunirVM struct {
-	IP       string
-	Hostname string
-	Port     string
-	KeyFile  string
-	Client   *gophercloud.ServiceClient
-	Server   *servers.Server
+	IP           string
+	Hostname     string
+	Port         string
+	KeyFile      string
+	Client       *gophercloud.ServiceClient
+	Server       *servers.Server
+	ClientImage  string
+	FloatingIPID string
 }
 
 func (t TunirVM) Delete() error {
 	res := servers.Delete(t.Client, t.Server.ID)
+	if t.ClientImage != "" {
+		// Delete the image we uploaded
+		images.Delete(t.Client, t.ClientImage)
+	}
+	if t.FloatingIPID != "" {
+		// Delete the Floating IP
+		floatingip.Delete(t.Client, t.FloatingIPID)
+	}
 	return res.ExtractErr()
 }
 
@@ -92,10 +102,14 @@ func BootInstanceOS() (TVM, error) {
 		putImageResult := images.Upload(c, image.ID, f1)
 
 		if putImageResult.Err != nil {
-			check(err)
+			// Just stop the job here and get out.
+			fmt.Println(err)
+			images.Delete(client, image.ID)
+			os.Exit(300)
 		}
 
 		// Everything okay.
+		tvm.ClientImage = image.ID
 		imagename = imageName
 
 	}
@@ -122,7 +136,7 @@ func BootInstanceOS() (TVM, error) {
 	}).Extract()
 	if err != nil {
 		fmt.Println("Unable to create server: %s", err)
-		return tvm, err
+		os.Exit(301)
 	}
 	tvm.Server = server
 	tvm.Client = client
@@ -132,12 +146,19 @@ func BootInstanceOS() (TVM, error) {
 	servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
 	fmt.Println("Time to assign a floating pointip.")
 	fp, err := floatingip.Create(client, floatingip.CreateOpts{Pool: floating_pool}).Extract()
-	fmt.Println(fp)
-	// Now let us assign
+
+	if err != nil {
+		// There is an error in getting floating IP
+		fmt.Println(err)
+		tvm.Delete()
+		os.Exit(302)
+	}
+	// Now let us assign a floating IP
 	floatingip.AssociateInstance(client, floatingip.AssociateOpts{
 		ServerID:   server.ID,
 		FloatingIP: fp.IP,
 	})
+	tvm.FloatingIPID = fp.ID
 	tvm.IP = fp.IP
 	tvm.KeyFile = viper.GetString("key")
 	tvm.Port = "22"
