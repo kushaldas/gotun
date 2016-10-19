@@ -25,6 +25,7 @@ func starthere(jobname, config_dir string) {
 	}
 
 	viper.SetDefault("PORT", "22")
+	viper.SetDefault("USER", "fedora")
 	backend := viper.GetString("BACKEND")
 	fmt.Println("Starts a new Tunir Job.\n")
 

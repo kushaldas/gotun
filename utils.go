@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"strconv"
+	"github.com/spf13/viper"
 )
 
 type TunirResult struct {
@@ -33,7 +35,7 @@ type TVM interface {
 func Poll(timeout int64, vm TVM) bool {
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
-		User: "fedora",
+		User: viper.GetString("USER"),
 		Auth: []ssh.AuthMethod{
 			vm.FromKeyFile(),
 		},
@@ -113,7 +115,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
-		User: "fedora",
+		User: viper.GetString("USER"),
 		Auth: []ssh.AuthMethod{
 			vm.FromKeyFile(),
 		},
