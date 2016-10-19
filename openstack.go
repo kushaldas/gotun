@@ -58,6 +58,7 @@ func (t TunirVM) GetDetails() (string, string) {
 	return t.IP, t.Port
 }
 
+//BootInstanceOS boots a new vm in OpenStack
 func BootInstanceOS() (TVM, error) {
 	var tvm TunirVM
 	// If no config is found, use the default(s)

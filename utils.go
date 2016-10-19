@@ -32,6 +32,8 @@ type TVM interface {
 	GetDetails() (string, string)
 }
 
+//Poll keeps trying to ssh into the vm.
+//We need to this to test if the vm is ready for work.
 func Poll(timeout int64, vm TVM) bool {
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
@@ -70,6 +72,8 @@ func Poll(timeout int64, vm TVM) bool {
 	return false
 }
 
+
+//printResultSet prints the whole test run result to a file, and also on STDOUT.
 func printResultSet(result ResultSet) {
 	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
 	fmt.Println("\nResult file at:", file.Name())
@@ -92,6 +96,7 @@ func printResultSet(result ResultSet) {
 	}
 }
 
+//ReadCommands returns a slice of strings with all the commands.
 func ReadCommands(filename string) []string {
 	data, _ := ioutil.ReadFile(filename)
 	return strings.Split(string(data), "\n")
@@ -103,6 +108,8 @@ func check(e error) {
 	}
 }
 
+
+//ExecuteTests runs the given commands in the VM.
 func ExecuteTests(commands []string, vm TVM) ResultSet {
 	var actualcommand string
 	var willfail, dontcare bool
