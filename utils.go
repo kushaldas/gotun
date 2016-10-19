@@ -43,7 +43,7 @@ func Poll(timeout int64, vm TVM) bool {
 	start := time.Now().Unix()
 	for {
 
-		fmt.Println("Polling for a successful ssh connection.")
+		fmt.Println("Polling for a successful ssh connection.\n")
 		time.Sleep(5 * time.Second)
 		currenttime := time.Now().Unix()
 		difftime := currenttime - start
@@ -55,7 +55,8 @@ func Poll(timeout int64, vm TVM) bool {
 		// Execute the function
 		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
 		if err != nil {
-			fmt.Println(err)
+			//TODO: enable for debugging
+			//fmt.Println(err)
 			continue
 		}
 		session, err := connection.NewSession()
