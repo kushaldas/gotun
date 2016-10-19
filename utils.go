@@ -1,13 +1,13 @@
 package main
 
 import (
-	"golang.org/x/crypto/ssh"
 	"fmt"
-	"time"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"os"
-	"strings"
 	"regexp"
+	"strings"
+	"time"
 )
 
 type TunirResult struct {

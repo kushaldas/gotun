@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/spf13/viper"
 	"fmt"
-		"github.com/rackspace/gophercloud"
+	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
-	"strings"
-	"path/filepath"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type TunirVM struct {
