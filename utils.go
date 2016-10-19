@@ -10,6 +10,11 @@ import (
 	"time"
 	"strconv"
 	"github.com/spf13/viper"
+	"github.com/rackspace/gophercloud"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
+	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
+
 )
 
 type TunirResult struct {
@@ -30,6 +35,53 @@ type TVM interface {
 	Delete() error
 	FromKeyFile() ssh.AuthMethod
 	GetDetails() (string, string)
+}
+
+
+type TunirVM struct {
+	VMType	     string
+	IP           string
+	Hostname     string
+	Port         string
+	KeyFile      string
+	Client       *gophercloud.ServiceClient
+	Server       *servers.Server
+	ClientImage  string
+	FloatingIPID string
+}
+
+func (t TunirVM) Delete() error {
+	if t.VMType == "openstack" {
+		res := servers.Delete(t.Client, t.Server.ID)
+		if t.ClientImage != "" {
+			// Delete the image we uploaded
+			images.Delete(t.Client, t.ClientImage)
+		}
+		if t.FloatingIPID != "" {
+			// Delete the Floating IP
+			floatingip.Delete(t.Client, t.FloatingIPID)
+		}
+		return res.ExtractErr()
+	}
+	return nil
+}
+
+func (t TunirVM) FromKeyFile() ssh.AuthMethod {
+	file := t.KeyFile
+	buffer, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil
+	}
+
+	key, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		return nil
+	}
+	return ssh.PublicKeys(key)
+}
+
+func (t TunirVM) GetDetails() (string, string) {
+	return t.IP, t.Port
 }
 
 //Poll keeps trying to ssh into the vm.

@@ -10,7 +10,7 @@ import (
 )
 
 func starthere(jobname, config_dir string) {
-	var vm TVM
+	var vm TunirVM
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
 		fmt.Println("Missing commands file for job:", jobname)

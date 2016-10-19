@@ -9,57 +9,15 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-type TunirVM struct {
-	IP           string
-	Hostname     string
-	Port         string
-	KeyFile      string
-	Client       *gophercloud.ServiceClient
-	Server       *servers.Server
-	ClientImage  string
-	FloatingIPID string
-}
 
-func (t TunirVM) Delete() error {
-	res := servers.Delete(t.Client, t.Server.ID)
-	if t.ClientImage != "" {
-		// Delete the image we uploaded
-		images.Delete(t.Client, t.ClientImage)
-	}
-	if t.FloatingIPID != "" {
-		// Delete the Floating IP
-		floatingip.Delete(t.Client, t.FloatingIPID)
-	}
-	return res.ExtractErr()
-}
-
-func (t TunirVM) FromKeyFile() ssh.AuthMethod {
-	file := t.KeyFile
-	buffer, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil
-	}
-
-	key, err := ssh.ParsePrivateKey(buffer)
-	if err != nil {
-		return nil
-	}
-	return ssh.PublicKeys(key)
-}
-
-func (t TunirVM) GetDetails() (string, string) {
-	return t.IP, t.Port
-}
 
 //BootInstanceOS boots a new vm in OpenStack
-func BootInstanceOS() (TVM, error) {
+func BootInstanceOS() (TunirVM, error) {
 	var tvm TunirVM
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
