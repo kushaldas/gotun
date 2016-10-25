@@ -13,6 +13,7 @@ import (
 
 func BootInstanceAWS() (TunirVM, error) {
 	var tvm TunirVM
+	tvm.VMType = "aws"
 	region := viper.GetString("AWS_REGION")
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_KEY"), viper.GetString("AWS_SECRET"), "")}))
@@ -32,6 +33,7 @@ func BootInstanceAWS() (TunirVM, error) {
 		fmt.Println("Could not create instance", err)
 		return tvm, err
 	}
+	tvm.AWS_Client = *svc
 	ins := *runResult.Instances[0]
 	// Now we will wait for 60 seconds before refreshing the information.
 	fmt.Println("Waiting for 60 seconds before checking the instance.")
@@ -49,6 +51,7 @@ func BootInstanceAWS() (TunirVM, error) {
 		return tvm, err
 	}
 	ins = *resp.Reservations[0].Instances[0]
+	fmt.Println("The instance ID:", *ins.InstanceId)
 	tvm.IP = *ins.PublicIpAddress
 	tvm.Port = viper.GetString("PORT")
 	tvm.KeyFile = viper.GetString("Key")

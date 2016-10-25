@@ -2,18 +2,18 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"os"
-	"regexp"
-	"strings"
-	"time"
-	"strconv"
-	"github.com/spf13/viper"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
+	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
+	"io/ioutil"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
@@ -38,9 +38,8 @@ type TVM interface {
 	GetDetails() (string, string)
 }
 
-
 type TunirVM struct {
-	VMType	     string
+	VMType       string
 	IP           string
 	Hostname     string
 	Port         string
@@ -49,7 +48,8 @@ type TunirVM struct {
 	Server       *servers.Server
 	ClientImage  string
 	FloatingIPID string
-	AWS_INS	     ec2.Instance
+	AWS_INS      ec2.Instance
+	AWS_Client   ec2.EC2
 }
 
 func (t TunirVM) Delete() error {
@@ -64,6 +64,20 @@ func (t TunirVM) Delete() error {
 			floatingip.Delete(t.Client, t.FloatingIPID)
 		}
 		return res.ExtractErr()
+	} else if t.VMType == "aws" {
+		params := &ec2.TerminateInstancesInput{
+			InstanceIds: []*string{ // Required
+				t.AWS_INS.InstanceId, // Required
+			},
+		}
+		_, err := t.AWS_Client.TerminateInstances(params)
+
+		if err != nil {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+			return err
+		}
 	}
 	return nil
 }
@@ -126,7 +140,6 @@ func Poll(timeout int64, vm TVM) bool {
 	return false
 }
 
-
 //printResultSet prints the whole test run result to a file, and also on STDOUT.
 func printResultSet(result ResultSet) {
 	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
@@ -161,7 +174,6 @@ func check(e error) {
 		panic(e)
 	}
 }
-
 
 //ExecuteTests runs the given commands in the VM.
 func ExecuteTests(commands []string, vm TVM) ResultSet {

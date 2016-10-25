@@ -42,7 +42,7 @@ func starthere(jobname, config_dir string) {
 			Port: viper.GetString("PORT")}
 	} else if backend == "aws" {
 		vm, _ = BootInstanceAWS()
-		res := Poll(180, vm)
+		res := Poll(300, vm)
 		if !res {
 			fmt.Println("Failed to ssh into the vm.")
 			panic("Failed.")
@@ -50,7 +50,7 @@ func starthere(jobname, config_dir string) {
 	}
 	commands := ReadCommands(commandfile)
 	result := ExecuteTests(commands, vm)
-	if backend == "openstack" {
+	if backend == "openstack" || backend == "aws" {
 		// Time to destroy the server
 		vm.Delete()
 	}
