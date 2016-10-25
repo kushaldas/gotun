@@ -15,6 +15,7 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 type TunirResult struct {
@@ -48,6 +49,7 @@ type TunirVM struct {
 	Server       *servers.Server
 	ClientImage  string
 	FloatingIPID string
+	AWS_INS	     ec2.Instance
 }
 
 func (t TunirVM) Delete() error {

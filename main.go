@@ -40,6 +40,13 @@ func starthere(jobname, config_dir string) {
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
 			Port: viper.GetString("PORT")}
+	} else if backend == "aws" {
+		vm, _ = BootInstanceAWS()
+		res := Poll(180, vm)
+		if !res {
+			fmt.Println("Failed to ssh into the vm.")
+			panic("Failed.")
+		}
 	}
 	commands := ReadCommands(commandfile)
 	result := ExecuteTests(commands, vm)
