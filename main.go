@@ -11,6 +11,8 @@ import (
 
 func starthere(jobname, config_dir string) {
 	var vm TunirVM
+	var commands []string
+	var result ResultSet
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
 		fmt.Println("Missing commands file for job:", jobname)
@@ -35,7 +37,7 @@ func starthere(jobname, config_dir string) {
 		res := Poll(180, vm)
 		if !res {
 			fmt.Println("Failed to ssh into the vm.")
-			panic("Failed.")
+			goto ERROR_NOIP
 		}
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
@@ -45,11 +47,12 @@ func starthere(jobname, config_dir string) {
 		res := Poll(300, vm)
 		if !res {
 			fmt.Println("Failed to ssh into the vm.")
-			panic("Failed.")
+			goto ERROR_NOIP
 		}
 	}
-	commands := ReadCommands(commandfile)
-	result := ExecuteTests(commands, vm)
+	commands = ReadCommands(commandfile)
+	result = ExecuteTests(commands, vm)
+	ERROR_NOIP:
 	if backend == "openstack" || backend == "aws" {
 		// Time to destroy the server
 		vm.Delete()
