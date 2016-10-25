@@ -19,6 +19,7 @@ import (
 //BootInstanceOS boots a new vm in OpenStack
 func BootInstanceOS() (TunirVM, error) {
 	var tvm TunirVM
+	tvm.VMType = "openstack"
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
