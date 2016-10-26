@@ -13,6 +13,7 @@ func starthere(jobname, config_dir string) {
 	var vm TunirVM
 	var commands []string
 	var result ResultSet
+	res := false
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
 		fmt.Println("Missing commands file for job:", jobname)
@@ -32,9 +33,14 @@ func starthere(jobname, config_dir string) {
 	fmt.Println("Starts a new Tunir Job.\n")
 
 	if backend == "openstack" {
-		vm, _ = BootInstanceOS()
+		vm, err = BootInstanceOS()
+		if err != nil {
+			// We do not have an instance
+			fmt.Println("We do not have an instance.")
+			goto ERROR_NOIP
+		}
 		// First 180 seconds timeout for the vm to come up
-		res := Poll(180, vm)
+		res = Poll(180, vm)
 		if !res {
 			fmt.Println("Failed to ssh into the vm.")
 			goto ERROR_NOIP
@@ -43,8 +49,14 @@ func starthere(jobname, config_dir string) {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
 			Port: viper.GetString("PORT")}
 	} else if backend == "aws" {
-		vm, _ = BootInstanceAWS()
-		res := Poll(300, vm)
+		vm, err = BootInstanceAWS()
+		if err != nil {
+			// We do not have an instance
+			fmt.Println("We do not have an instance.")
+			goto ERROR_NOIP
+		}
+
+		res = Poll(300, vm)
 		if !res {
 			fmt.Println("Failed to ssh into the vm.")
 			goto ERROR_NOIP
