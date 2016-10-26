@@ -95,7 +95,7 @@ func BootInstanceOS() (TunirVM, error) {
 		keypair,
 	}).Extract()
 	if err != nil {
-		fmt.Println("Unable to create server: %s", err)
+		fmt.Println("Unable to create server: ", err)
 		os.Exit(301)
 	}
 	tvm.Server = server
