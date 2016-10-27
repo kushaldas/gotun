@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"encoding/json"
 )
 
 type TunirResult struct {
@@ -143,7 +144,11 @@ func Poll(timeout int64, vm TVM) bool {
 //printResultSet prints the whole test run result to a file, and also on STDOUT.
 func printResultSet(result ResultSet) {
 	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
+	defer file.Close()
 	fmt.Println("\nResult file at:", file.Name())
+	json_result_name := file.Name() + ".json"
+	json_data, _ := json.Marshal(result)
+	ioutil.WriteFile(json_result_name, json_data, 0644)
 	status := result.Status
 	results := result.Results
 	fmt.Printf("\n\nJob status: %v\n", status)
