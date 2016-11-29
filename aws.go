@@ -20,11 +20,11 @@ func BootInstanceAWS() (TunirVM, error) {
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
 		// An Amazon Linux AMI ID for t2.micro instances in the us-west-2 region
-		ImageId:          aws.String("ami-055b1265"),
-		InstanceType:     aws.String("t2.medium"),
-		KeyName:          aws.String("kushal-tunir"),
-		SubnetId:         aws.String("subnet-2d0c9448"),
-		SecurityGroupIds: aws.StringSlice([]string{"sg-cf95d7aa"}),
+		ImageId:          aws.String(viper.GetString("AWS_AMI")),
+		InstanceType:     aws.String(viper.GetString("AWS_INSTANCE")),
+		KeyName:          aws.String(viper.GetString("AWS_KEYNAME")),
+		SubnetId:         aws.String(viper.GetString("AWS_SUBNET")),
+		SecurityGroupIds: aws.StringSlice(viper.GetStringSlice("AWS_SECURITYGROUPIDS")),
 		MinCount:         aws.Int64(1),
 		MaxCount:         aws.Int64(1),
 	})
