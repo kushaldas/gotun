@@ -73,6 +73,9 @@ For remote systems
     USER: "username"
 
 
+.. note:: The default username is *fedora*, and default port is *22*.
+
+
 
 jobname.txt
 ------------
