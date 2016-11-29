@@ -8,7 +8,6 @@ AWS.
 
 ### Installation of dependencies
 
-* go get github.com/rackspace/gophercloud
-* go get github.com/spf13/viper
-* go get golang.org/x/crypto/ssh
+They are now under godeps.
 
+Feel free to read the rest of document for more information about how to use it.
