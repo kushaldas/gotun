@@ -10,6 +10,7 @@ Openstack based job
 
 ::
 
+    ---
     BACKEND: "openstack"
 
     OS_AUTH_URL: "URL"
@@ -33,3 +34,27 @@ the test, then provide a full path to the image .qcow2 file in *OS_IMAGE*.
 ::
 
     OS_IMAGE: "/home/kdas/Fedora-Atomic-24-20161031.0.x86_64.qcow2"
+
+
+AWS based job
+==============
+
+::
+
+    ---
+    BACKEND: "aws"
+
+    AWS_AMI: "ami-df3367bf"
+    AWS_INSTANCE: "t2.medium"
+    AWS_KEYNAME: "The name of the key"
+    AWS_SUBNET:  "subnet-ID"
+    AWS_SECURITYGROUPIDS:
+        - "sg-groupid"
+    AWS_REGION: "us-west-1"
+    AWS_KEY: "YOURKEY"
+    AWS_SECRET: "SECRET KEY PART"
+    key: "PATH to the .pem file"
+
+Update the configuration based on your need. You can see that you will need to find subnet-id, security group ids for each region to work with.
+
+
