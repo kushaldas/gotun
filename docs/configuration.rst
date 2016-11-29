@@ -60,6 +60,20 @@ AWS based job
 Update the configuration based on your need. You can see that you will need to
 find subnet-id, security group ids for each region to work with.
 
+For remote systems
+-------------------
+
+::
+
+    ---
+    BACKEND: "bare"
+    key: "Path to the .pem file"
+    IP: "IP of the remote system"
+    PORT: 22
+    USER: "username"
+
+
+
 jobname.txt
 ------------
 
