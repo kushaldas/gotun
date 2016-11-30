@@ -8,7 +8,7 @@ file which contains the commands to execute.
 
 
 Openstack based job
-====================
+-------------------
 
 ::
 
@@ -39,7 +39,7 @@ the test, then provide a full path to the image .qcow2 file in *OS_IMAGE*.
 
 
 AWS based job
-==============
+--------------
 
 ::
 
