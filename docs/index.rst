@@ -6,7 +6,7 @@
 Welcome to gotun
 ================
 
-This is written from scratch version of `Tunir <https://tunir.rtfd.io>_` in
+This is written from scratch version of `Tunir <https://tunir.rtfd.io>`_ in
 golang.
 
 Contents:
