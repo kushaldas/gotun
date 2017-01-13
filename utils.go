@@ -17,6 +17,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"encoding/json"
+	"os/exec"
+	"bytes"
 )
 
 type TunirResult struct {
@@ -281,3 +283,18 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 	return FinalResult
 
 }
+
+
+func system(command string) (string, bool) {
+	cmds := strings.Split(command, " ")
+	cmd := exec.Command(cmds[0], cmds[1:]...)
+	cmd.Stdin = strings.NewReader("some input")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return err.Error(), false
+	}
+	return out.String(), true
+}
+
