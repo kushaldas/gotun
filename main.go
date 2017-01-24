@@ -13,6 +13,8 @@ func starthere(jobname, config_dir string) {
 	var vm TunirVM
 	var commands []string
 	var result ResultSet
+	currentruninfo := make(map[string]string)
+
 	res := false
 	vmdict := make(map[string]TunirVM)
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
@@ -74,6 +76,17 @@ func starthere(jobname, config_dir string) {
 		}
 		vmdict["vm1"] = vm
 	}
+	// Now time to dump IP/SSH information on a file.
+	for k := range vmdict {
+		vm = vmdict[k]
+		ip, _ := vm.GetDetails()
+		currentruninfo[k] = ip
+
+	}
+	currentruninfo["user"] = viper.GetString("USER")
+	currentruninfo["keyfile"] = viper.GetString("key")
+	writeIPinformation(currentruninfo)
+
 	commands = ReadCommands(commandfile)
 	result = ExecuteTests(commands, vmdict)
 	ERROR_NOIP:

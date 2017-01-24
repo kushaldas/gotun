@@ -143,6 +143,13 @@ func Poll(timeout int64, vm TVM) bool {
 	return false
 }
 
+// This function dumps the IP information to a local file.
+func writeIPinformation(data map[string]string) {
+	b, _ := json.Marshal(data)
+	ioutil.WriteFile("./current_run_info.json", b, 0644)
+
+}
+
 //printResultSet prints the whole test run result to a file, and also on STDOUT.
 func printResultSet(result ResultSet) {
 	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
