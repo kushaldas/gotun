@@ -191,11 +191,12 @@ func check(e error) {
 
 //ExecuteTests runs the given commands in the VM.
 func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
-	var actualcommand string
-	var willfail, dontcare bool
+	var actualcommand, outstring string
+	var willfail, dontcare, hosttest bool
 	var parts []string
 	var output []byte
 	var session *ssh.Session
+	var err error
 
 	FinalResult := ResultSet{}
 	result := make([]TunirResult, 0)
@@ -213,6 +214,7 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 	for i := range commands {
 		willfail = false
 		dontcare = false
+		hosttest = false
 		command := commands[i]
 		if command != "" {
 			if strings.HasPrefix(command, "SLEEP") {
@@ -221,6 +223,17 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 				t, _ := strconv.ParseInt(d, 10, 64)
 				time.Sleep(time.Duration(t) * time.Second)
 				continue
+			} else if strings.HasPrefix(command, "HOSTCOMMAND") {
+				parts = strings.Split(command, " ")
+				actualcommand = strings.Join(parts[1:], " ")
+				out, err := system(actualcommand)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					fmt.Println(out)
+				}
+				continue
+
 			}
 			if vmr.MatchString(command) {
 				parts = strings.Split(command, " ")
@@ -229,6 +242,13 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 				vm = vmdict[parts[0]] // We mention vm name at the beginning of the list.
 				ip, port = vm.GetDetails()
 
+			} else if strings.HasPrefix(command, "HOSTTEST") {
+				hosttest = true // Mark this as hosttest.
+				parts = strings.Split(command, " ")
+				actualcommand = strings.Join(parts[1:], " ")
+				fmt.Println("Executing: ", command)
+				outstring, err = system(actualcommand)
+				output = []byte(outstring)
 			} else {
 				actualcommand = command
 			}
@@ -248,19 +268,21 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 			continue
 		}
 
-		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
-		if err != nil {
-			output = []byte(err.Error())
-			goto ERROR1
+		if !hosttest {
+			connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
+			if err != nil {
+				output = []byte(err.Error())
+				goto ERROR1
+			}
+			session, err = connection.NewSession()
+			if err != nil {
+				output = []byte(err.Error())
+				goto ERROR1
+			}
+			defer session.Close()
+			fmt.Println("Executing: ", command)
+			output, err = session.CombinedOutput(actualcommand)
 		}
-		session, err = connection.NewSession()
-		if err != nil {
-			output = []byte(err.Error())
-			goto ERROR1
-		}
-		defer session.Close()
-		fmt.Println("Executing: ", command)
-		output, err = session.CombinedOutput(actualcommand)
 		FinalResult.TotalTests += 1
 		if dontcare {
 			FinalResult.TotalNonGatingTests += 1
@@ -296,16 +318,18 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 }
 
 
-func system(command string) (string, bool) {
+func system(command string) (string, error) {
 	cmds := strings.Split(command, " ")
 	cmd := exec.Command(cmds[0], cmds[1:]...)
-	cmd.Stdin = strings.NewReader("some input")
+	cmd.Stdin = strings.NewReader("")
 	var out bytes.Buffer
+	var errtext bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &errtext
 	err := cmd.Run()
 	if err != nil {
-		return err.Error(), false
+		return out.String() + errtext.String(), err
 	}
-	return out.String(), true
+	return out.String() + errtext.String(), nil
 }
 
