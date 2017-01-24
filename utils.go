@@ -183,7 +183,7 @@ func check(e error) {
 }
 
 //ExecuteTests runs the given commands in the VM.
-func ExecuteTests(commands []string, vm TVM) ResultSet {
+func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 	var actualcommand string
 	var willfail, dontcare bool
 	var parts []string
@@ -194,6 +194,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 	result := make([]TunirResult, 0)
 
 	vmr, _ := regexp.Compile("^vm[0-9] ")
+	vm := vmdict["vm1"] // Because we will always have one vm atleast
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
 		User: viper.GetString("USER"),
@@ -217,6 +218,9 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 			if vmr.MatchString(command) {
 				parts = strings.Split(command, " ")
 				actualcommand = strings.Join(parts[1:], " ")
+				// Now we need to find the ip/port pair for the current vm.
+				vm = vmdict[parts[0]] // We mention vm name at the beginning of the list.
+				ip, port = vm.GetDetails()
 
 			} else {
 				actualcommand = command
@@ -248,7 +252,7 @@ func ExecuteTests(commands []string, vm TVM) ResultSet {
 			goto ERROR1
 		}
 		defer session.Close()
-		fmt.Println("Executing: ", actualcommand)
+		fmt.Println("Executing: ", command)
 		output, err = session.CombinedOutput(actualcommand)
 		FinalResult.TotalTests += 1
 		if dontcare {

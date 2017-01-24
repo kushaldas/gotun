@@ -17,7 +17,7 @@ import (
 
 
 //BootInstanceOS boots a new vm in OpenStack
-func BootInstanceOS() (TunirVM, error) {
+func BootInstanceOS(vmname string) (TunirVM, error) {
 	var tvm TunirVM
 	tvm.VMType = "openstack"
 	// If no config is found, use the default(s)
@@ -79,7 +79,7 @@ func BootInstanceOS() (TunirVM, error) {
 	security_groups := viper.GetStringSlice("OS_SECURITY_GROUPS")
 
 	sOpts := servers.CreateOpts{
-		Name:           "gotun",
+		Name:           vmname,
 		FlavorName:     vmflavor,
 		ImageName:      imagename,
 		SecurityGroups: security_groups,

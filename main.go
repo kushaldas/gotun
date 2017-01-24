@@ -14,6 +14,7 @@ func starthere(jobname, config_dir string) {
 	var commands []string
 	var result ResultSet
 	res := false
+	vmdict := make(map[string]TunirVM)
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
 		fmt.Println("Missing commands file for job:", jobname)
@@ -29,25 +30,35 @@ func starthere(jobname, config_dir string) {
 
 	viper.SetDefault("PORT", "22")
 	viper.SetDefault("USER", "fedora")
+	viper.SetDefault("NUMBER", 1)
+
 	backend := viper.GetString("BACKEND")
 	fmt.Println("Starts a new Tunir Job.\n")
 
 	if backend == "openstack" {
-		vm, err = BootInstanceOS()
-		if err != nil {
-			// We do not have an instance
-			fmt.Println("We do not have an instance.")
-			goto ERROR_NOIP
-		}
-		// First 180 seconds timeout for the vm to come up
-		res = Poll(180, vm)
-		if !res {
-			fmt.Println("Failed to ssh into the vm.")
-			goto ERROR_NOIP
+		number := viper.GetInt("NUMBER")
+		for i:= 1; i <= number; i ++ {
+			vmname := fmt.Sprintf("gotun-%d", i)
+			vm, err = BootInstanceOS(vmname)
+			if err != nil {
+				// We do not have an instance
+				fmt.Println("We do not have an instance.")
+				goto ERROR_NOIP
+			}
+			// First 180 seconds timeout for the vm to come up
+			res = Poll(180, vm)
+			if !res {
+				fmt.Println("Failed to ssh into the vm.")
+				goto ERROR_NOIP
+			}
+			// All good, add in the dict
+			name := fmt.Sprintf("vm%d", i)
+			vmdict[name] = vm
 		}
 	} else if backend == "bare" {
 		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
 			Port: viper.GetString("PORT")}
+		vmdict["vm1"] = vm
 	} else if backend == "aws" {
 		vm, err = BootInstanceAWS()
 		if err != nil {
@@ -61,13 +72,18 @@ func starthere(jobname, config_dir string) {
 			fmt.Println("Failed to ssh into the vm.")
 			goto ERROR_NOIP
 		}
+		vmdict["vm1"] = vm
 	}
 	commands = ReadCommands(commandfile)
-	result = ExecuteTests(commands, vm)
+	result = ExecuteTests(commands, vmdict)
 	ERROR_NOIP:
 	if backend == "openstack" || backend == "aws" {
 		// Time to destroy the server
-		vm.Delete()
+		// Do it over a loop
+		for k := range vmdict {
+			vm = vmdict[k]
+			vm.Delete()
+		}
 	}
 	printResultSet(result)
 	if !result.Status {
