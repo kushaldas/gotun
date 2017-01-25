@@ -7,6 +7,7 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	rimages "github.com/rackspace/gophercloud/openstack/compute/v2/images"
 	"github.com/rackspace/gophercloud/openstack/imageservice/v2/images"
 	"github.com/spf13/viper"
 	"os"
@@ -20,6 +21,7 @@ import (
 func BootInstanceOS(vmname string) (TunirVM, error) {
 	var tvm TunirVM
 	tvm.VMType = "openstack"
+	tvm.Hostname = vmname
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
@@ -70,8 +72,14 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 
 		// Everything okay.
 		tvm.ClientImage = image.ID
+		tvm.CleanImage = true
 		imagename = imageName
 
+	} else {
+		// We need to still get the Image ID for rebuild work.
+		image_id, _:= rimages.IDFromName(client, imagename)
+		tvm.ClientImage = image_id
+		tvm.CleanImage = false
 	}
 	network_id := viper.GetString("OS_NETWORK")
 	floating_pool := viper.GetString("OS_FLOATING_POOL")

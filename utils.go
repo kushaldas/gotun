@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"os/exec"
 	"bytes"
+	"github.com/pkg/errors"
 )
 
 type TunirResult struct {
@@ -50,6 +51,7 @@ type TunirVM struct {
 	Client       *gophercloud.ServiceClient
 	Server       *servers.Server
 	ClientImage  string
+	CleanImage   bool
 	FloatingIPID string
 	AWS_INS      ec2.Instance
 	AWS_Client   ec2.EC2
@@ -58,7 +60,7 @@ type TunirVM struct {
 func (t TunirVM) Delete() error {
 	if t.VMType == "openstack" {
 		res := servers.Delete(t.Client, t.Server.ID)
-		if t.ClientImage != "" {
+		if t.CleanImage == true {
 			// Delete the image we uploaded
 			images.Delete(t.Client, t.ClientImage)
 		}
@@ -80,6 +82,30 @@ func (t TunirVM) Delete() error {
 			// Message from an error.
 			fmt.Println(err.Error())
 			return err
+		}
+	}
+	return nil
+}
+
+func (t TunirVM) Rebuild() error {
+	if t.VMType == "openstack" {
+		ropts := servers.RebuildOpts{
+			ImageID:	t.ClientImage,
+			Name:		t.Hostname,
+			AdminPass: 	t.Server.AdminPass,
+
+		}
+		fmt.Println("Going to rebuild:", t.IP)
+		server, err := servers.Rebuild(t.Client, t.Server.ID, ropts).Extract()
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+		t.Server = server
+		res := Poll(180, t)
+		if !res {
+			fmt.Println("Failed to ssh into the vm.")
+			return errors.New("Failed to ssh.")
 		}
 	}
 	return nil
@@ -231,6 +257,17 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 					fmt.Println(err)
 				} else {
 					fmt.Println(out)
+				}
+				continue
+
+			} else if command == "REBUILD_SERVERS" {
+				for k := range vmdict {
+					vm = vmdict[k]
+					err = vm.Rebuild()
+					if err != nil {
+						goto ERROR1 // Get out, we have problem in rebuild our servers.
+					}
+
 				}
 				continue
 
