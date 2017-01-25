@@ -7,7 +7,7 @@ which contains the configuration (say AWS or Openstack), and also the jobname.tx
 file which contains the commands to execute.
 
 
-Openstack based job
+OpenStack based job
 -------------------
 
 ::
@@ -36,6 +36,15 @@ the test, then provide a full path to the image .qcow2 file in *OS_IMAGE*.
 ::
 
     OS_IMAGE: "/home/kdas/Fedora-Atomic-24-20161031.0.x86_64.qcow2"
+
+
+Multiple VM(s) on OpenStack
+----------------------------
+
+In case you want to spin up more than one vm on OpenStack, then add a *NUMBER* value to the yml file.
+::
+
+    NUMBER: 3
 
 
 AWS based job
