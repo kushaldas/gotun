@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/kushaldas/gotun",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v74",
+	"GodepVersion": "v78",
 	"Deps": [
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",
