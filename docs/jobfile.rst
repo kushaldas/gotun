@@ -237,3 +237,4 @@ ansible playbook.
 
     HOSTCOMMAND: ./onevm.py
     HOSTTEST: ansible-playbook -b -i inventory atomic-host-tests/tests/improved-sanity-test/main.yml
+

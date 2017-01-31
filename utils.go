@@ -180,6 +180,7 @@ func writeIPinformation(data map[string]string) {
 func printResultSet(result ResultSet) {
 	file, _ := ioutil.TempFile(os.TempDir(), "tunirresult_")
 	defer file.Close()
+	fmt.Println("---------------\n")
 	fmt.Println("\nResult file at:", file.Name())
 	json_result_name := file.Name() + ".json"
 	json_data, _ := json.Marshal(result)
