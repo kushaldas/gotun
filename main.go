@@ -33,6 +33,7 @@ func starthere(jobname, config_dir string) {
 	viper.SetDefault("PORT", "22")
 	viper.SetDefault("USER", "fedora")
 	viper.SetDefault("NUMBER", 1)
+	viper.SetDefault("NODELETE", false)
 
 	backend := viper.GetString("BACKEND")
 	fmt.Println("Starts a new Tunir Job.\n")
@@ -93,9 +94,11 @@ func starthere(jobname, config_dir string) {
 	if backend == "openstack" || backend == "aws" {
 		// Time to destroy the server
 		// Do it over a loop
-		for k := range vmdict {
-			vm = vmdict[k]
-			vm.Delete()
+		if viper.GetBool("NODELETE") == false {
+			for k := range vmdict {
+				vm = vmdict[k]
+				vm.Delete()
+			}
 		}
 	}
 	printResultSet(result)
