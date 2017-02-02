@@ -331,6 +331,15 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 				goto ERROR1
 			}
 			defer session.Close()
+			modes := ssh.TerminalModes{
+				ssh.ECHO:          0,     // disable echoing
+				ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+    				ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+			}
+			if err = session.RequestPty("xterm", 80, 100, modes); err != nil {
+				fmt.Println(err)
+			}
+//
 			fmt.Println("Executing: ", command)
 			output, err = session.CombinedOutput(actualcommand)
 
