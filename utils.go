@@ -227,12 +227,13 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 
 	FinalResult := ResultSet{}
 	result := make([]TunirResult, 0)
+	username := viper.GetString("USER")
 
 	vmr, _ := regexp.Compile("^vm[0-9] ")
 	vm := vmdict["vm1"] // Because we will always have one vm atleast
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
-		User: viper.GetString("USER"),
+		User: username,
 		Auth: []ssh.AuthMethod{
 			vm.FromKeyFile(),
 		},
@@ -261,6 +262,18 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 				}
 				continue
 
+			} else if strings.HasPrefix(command, "COPY:") {
+				cmd := strings.Trim(command[6:], " ")
+				for k := range(vmdict) {
+					hostname := fmt.Sprintf("%s:", k)
+					vm_inside := vmdict[k]
+					ip := fmt.Sprintf("%s@%s:", username, vm_inside.IP)
+					cmd = strings.Replace(cmd, hostname, ip, 1,)
+				}
+				scp_command := fmt.Sprintf("scp -o StrictHostKeyChecking=no -r -i %s %s", vm.KeyFile, cmd)
+				fmt.Println("Executing COPY: ", scp_command)
+				system(scp_command)
+				continue
 			} else if command == "REBUILD_SERVERS" {
 				for k := range vmdict {
 					vm = vmdict[k]
@@ -307,8 +320,8 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 		}
 
 		if !hosttest {
-			connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
-			if err != nil {
+			connection, err2 := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
+			if err2 != nil {
 				output = []byte(err.Error())
 				goto ERROR1
 			}
@@ -320,6 +333,7 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 			defer session.Close()
 			fmt.Println("Executing: ", command)
 			output, err = session.CombinedOutput(actualcommand)
+
 		}
 		FinalResult.TotalTests += 1
 		if dontcare {
@@ -328,7 +342,7 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 	ERROR1:
 		rf := TunirResult{Output: string(output), Command: actualcommand}
 		if err != nil {
-
+			fmt.Println(err)
 			rf.Status = false
 			if willfail || dontcare {
 				result = append(result, rf)
