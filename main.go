@@ -59,9 +59,12 @@ func starthere(jobname, config_dir string) {
 			vmdict[name] = vm
 		}
 	} else if backend == "bare" {
-		vm = TunirVM{IP: viper.GetString("IP"), KeyFile: viper.GetString("key"),
+		localvms := viper.GetStringMapString("VMS")
+		for k := range localvms {
+			vm = TunirVM{IP: localvms[k], KeyFile: viper.GetString("key"),
 			Port: viper.GetString("PORT")}
-		vmdict["vm1"] = vm
+			vmdict[k] = vm
+		}
 	} else if backend == "aws" {
 		vm, err = BootInstanceAWS()
 		if err != nil {

@@ -77,12 +77,18 @@ For remote systems
     ---
     BACKEND: "bare"
     key: "Path to the .pem file"
-    IP: "IP of the remote system"
     PORT: 22
     USER: "username"
+    VMS:
+        vm1: IP1
+        vm2: IP2
+
+The keys of *VMS* are the vm numbers, you will have to mark at least *vm1* and the corresponding
+IP address.
 
 
 .. note:: The default username is *fedora*, and default port is *22*.
+
 
 
 
