@@ -16,9 +16,9 @@ OpenStack based job
     BACKEND: "openstack"
 
     OS_AUTH_URL: "URL"
-    OS_TENANT_ID: "Your tenant id"
-    OS_USERNAME: "USERNAME"
-    OS_PASSWORD: "PASSWORD"
+    TENANT_ID: "Your tenant id"
+    USERNAME: "USERNAME"
+    PASSWORD: "PASSWORD"
     OS_REGION_NAME: "RegionOne"
     OS_IMAGE: "Fedora-Atomic-24-20161031.0.x86_64.qcow2"
     OS_FLAVOR: "m1.medium"
@@ -36,6 +36,12 @@ the test, then provide a full path to the image .qcow2 file in *OS_IMAGE*.
 ::
 
     OS_IMAGE: "/home/kdas/Fedora-Atomic-24-20161031.0.x86_64.qcow2"
+
+You can also set the following environment variables for the OpenStack job.
+
+- OS_TENANT_ID
+- OS_USERNAME
+- OS_PASSWORD
 
 
 Multiple VM(s) on OpenStack
