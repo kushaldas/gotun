@@ -15,8 +15,10 @@ func BootInstanceAWS() (TunirVM, error) {
 	var tvm TunirVM
 	tvm.VMType = "aws"
 	region := viper.GetString("AWS_REGION")
+	viper.SetEnvPrefix("AWS")
+	viper.AutomaticEnv()
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(region),
-		Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_KEY"), viper.GetString("AWS_SECRET"), "")}))
+		Credentials: credentials.NewStaticCredentials(viper.GetString("KEY"), viper.GetString("SECRET"), "")}))
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
 		// An Amazon Linux AMI ID for t2.micro instances in the us-west-2 region
