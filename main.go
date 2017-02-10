@@ -15,7 +15,6 @@ func starthere(jobname, config_dir string) {
 	var result ResultSet
 	currentruninfo := make(map[string]string)
 
-	res := false
 	vmdict := make(map[string]TunirVM)
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
@@ -49,8 +48,8 @@ func starthere(jobname, config_dir string) {
 				goto ERROR_NOIP
 			}
 			// First 180 seconds timeout for the vm to come up
-			res = Poll(180, vm)
-			if !res {
+			err = Poll(180, vm)
+			if err != nil {
 				fmt.Println("Failed to ssh into the vm.")
 				goto ERROR_NOIP
 			}
@@ -73,8 +72,8 @@ func starthere(jobname, config_dir string) {
 			goto ERROR_NOIP
 		}
 
-		res = Poll(300, vm)
-		if !res {
+		err = Poll(300, vm)
+		if err != nil {
 			fmt.Println("Failed to ssh into the vm.")
 			goto ERROR_NOIP
 		}

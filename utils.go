@@ -102,10 +102,10 @@ func (t TunirVM) Rebuild() error {
 			return err
 		}
 		t.Server = server
-		res := Poll(180, t)
-		if !res {
+		err = Poll(180, t)
+		if err != nil {
 			fmt.Println("Failed to ssh into the vm.")
-			return errors.New("Failed to ssh.")
+			return err
 		}
 	}
 	return nil
@@ -131,7 +131,7 @@ func (t TunirVM) GetDetails() (string, string) {
 
 //Poll keeps trying to ssh into the vm.
 //We need to this to test if the vm is ready for work.
-func Poll(timeout int64, vm TVM) bool {
+func Poll(timeout int64, vm TVM) error {
 	ip, port := vm.GetDetails()
 	sshConfig := &ssh.ClientConfig{
 		User: viper.GetString("USER"),
@@ -148,7 +148,7 @@ func Poll(timeout int64, vm TVM) bool {
 		difftime := currenttime - start
 		// Check for timeout
 		if timeout >= 0 && difftime >= timeout {
-			return false
+			return errors.New("Time out in POLL")
 		}
 
 		// Execute the function
@@ -160,13 +160,13 @@ func Poll(timeout int64, vm TVM) bool {
 		}
 		session, err := connection.NewSession()
 		if err != nil {
-			return false
+			return err
 		}
 		session.Close()
-		return true
+		return nil
 
 	}
-	return false
+	return errors.New("Failed to POLL back")
 }
 
 // This function dumps the IP information to a local file.
@@ -225,6 +225,7 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 	var session *ssh.Session
 	var err error
 
+
 	FinalResult := ResultSet{}
 	result := make([]TunirResult, 0)
 	username := viper.GetString("USER")
@@ -243,6 +244,7 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 		willfail = false
 		dontcare = false
 		hosttest = false
+
 		command := commands[i]
 		if command != "" {
 			if strings.HasPrefix(command, "SLEEP") {
@@ -285,6 +287,16 @@ func ExecuteTests(commands []string, vmdict map[string]TunirVM) ResultSet {
 				}
 				continue
 
+			} else if command == "POLL" {
+				for k := range vmdict {
+					vm = vmdict[k]
+					err = Poll(300, vm)
+					if err != nil {
+						goto ERROR1 // Get out, we have problem in rebuild our servers.
+					}
+
+				}
+				continue
 			}
 			if vmr.MatchString(command) {
 				parts = strings.Split(command, " ")

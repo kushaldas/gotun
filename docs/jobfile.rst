@@ -22,6 +22,18 @@ Example::
     SLEEP 40
     ls /etc
 
+Polling the VM(s)
+------------------
+
+We can use the *POLL* directive in the jobfile after a reboot, this will try to POLL every VM to make sure that we
+have the SSH service back in all the VM((s).
+
+Example::
+
+    ls
+    @@ sudo reboot
+    POLL
+    ls /
 
 Multiple VM based tests
 -------------------------
