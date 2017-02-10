@@ -25,12 +25,13 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
-
+	viper.SetEnvPrefix("OS")
+	viper.AutomaticEnv()
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: viper.GetString("OS_AUTH_URL"),
-		Username:         viper.GetString("OS_USERNAME"),
-		Password:         viper.GetString("OS_PASSWORD"),
-		TenantID:         viper.GetString("OS_TENANT_ID"),
+		Username:         viper.GetString("USERNAME"),
+		Password:         viper.GetString("PASSWORD"),
+		TenantID:         viper.GetString("TENANT_ID"),
 	}
 	region := viper.GetString("OS_REGION_NAME")
 	provider, err := openstack.AuthenticatedClient(opts)
