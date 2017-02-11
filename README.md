@@ -14,3 +14,7 @@ AWS.
 They are now under godeps.
 
 Feel free to read the rest of document for more information about how to use it.
+
+### Documentation
+
+For more information read the [documentation](http://gotun.rtfd.io)
