@@ -15,13 +15,13 @@ func TestReadCommands(t *testing.T) {
 	}
 }
 
-func TestwriteIPinformation(t *testing.T) {
+func TestWriteIPinformation(t *testing.T) {
 	m := make(map[string]string)
 	m["ip"] = "127.0.0.1"
 	writeIPinformation(m)
 }
 
-func Testsystem(t *testing.T) {
+func TestSystem(t *testing.T) {
 	data, err := system("ls ./")
 	if err != nil {
 		t.Error("We have error in running ls command.", data)
