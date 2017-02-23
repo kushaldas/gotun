@@ -3,11 +3,35 @@ package main
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 	"os"
 	"path/filepath"
 )
+
+func checkVariables() error {
+	backend := viper.GetString("BACKEND")
+	if backend == "openstack" {
+		viper.SetEnvPrefix("OS")
+		viper.AutomaticEnv()
+		u := viper.GetString("USERNAME")
+		p := viper.GetString("PASSWORD")
+		t := viper.GetString("TENANT_ID")
+		if (u == "") || (p == "") || (t == "") {
+			return errors.New("Missing secret configuration value(s).")
+		}
+	} else if backend == "aws" {
+		viper.SetEnvPrefix("AWS")
+		viper.AutomaticEnv()
+		k := viper.GetString("KEY")
+		s := viper.GetString("SECRET")
+		if (k == "") || (s == "") {
+			return errors.New("Missing secret configuration value(s).")
+		}
+	}
+	return nil
+}
 
 func starthere(jobname, config_dir string) {
 	var vm TunirVM
@@ -28,7 +52,11 @@ func starthere(jobname, config_dir string) {
 	if err != nil {
 		fmt.Println("No configuration file loaded - using defaults")
 	}
-
+	err = checkVariables()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(111)
+	}
 	viper.SetDefault("PORT", "22")
 	viper.SetDefault("USER", "fedora")
 	viper.SetDefault("NUMBER", 1)
@@ -39,7 +67,7 @@ func starthere(jobname, config_dir string) {
 
 	if backend == "openstack" {
 		number := viper.GetInt("NUMBER")
-		for i:= 1; i <= number; i ++ {
+		for i := 1; i <= number; i++ {
 			vmname := fmt.Sprintf("gotun-%d", i)
 			vm, err = BootInstanceOS(vmname)
 			if err != nil {
@@ -61,7 +89,7 @@ func starthere(jobname, config_dir string) {
 		localvms := viper.GetStringMapString("VMS")
 		for k := range localvms {
 			vm = TunirVM{IP: localvms[k], KeyFile: viper.GetString("key"),
-			Port: viper.GetString("PORT")}
+				Port: viper.GetString("PORT")}
 			vmdict[k] = vm
 		}
 	} else if backend == "aws" {
@@ -92,7 +120,7 @@ func starthere(jobname, config_dir string) {
 
 	commands = ReadCommands(commandfile)
 	result = ExecuteTests(commands, vmdict)
-	ERROR_NOIP:
+ERROR_NOIP:
 	if backend == "openstack" || backend == "aws" {
 		// Time to destroy the server
 		// Do it over a loop
