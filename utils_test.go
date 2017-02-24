@@ -6,7 +6,7 @@ import ("testing"
 
 func TestReadCommands(t *testing.T) {
 	data := ReadCommands("./testcommands.txt")
-	inside := []string{"go test", "ls", ""}
+	inside := []string{"ls /", "cat /etc/os-release", ""}
 
 	for i, v := range data {
 		if  v != inside[i] {

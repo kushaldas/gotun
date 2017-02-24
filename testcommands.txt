@@ -1,2 +1,2 @@
-go test
-ls
+ls /
+cat /etc/os-release

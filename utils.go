@@ -138,6 +138,7 @@ func Poll(timeout int64, vm TVM) error {
 		Auth: []ssh.AuthMethod{
 			vm.FromKeyFile(),
 		},
+		Timeout: 2 * time.Second,
 	}
 	start := time.Now().Unix()
 	for {
@@ -146,6 +147,7 @@ func Poll(timeout int64, vm TVM) error {
 		time.Sleep(5 * time.Second)
 		currenttime := time.Now().Unix()
 		difftime := currenttime - start
+		fmt.Println(difftime, timeout)
 		// Check for timeout
 		if timeout >= 0 && difftime >= timeout {
 			return errors.New("Time out in POLL")
@@ -155,7 +157,7 @@ func Poll(timeout int64, vm TVM) error {
 		connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ip, port), sshConfig)
 		if err != nil {
 			//TODO: enable for debugging
-			//fmt.Println(err)
+			fmt.Println(err)
 			continue
 		}
 		session, err := connection.NewSession()
