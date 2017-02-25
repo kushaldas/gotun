@@ -14,13 +14,16 @@ func TestOpenStack(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 	s := os.Stdout
 	os.Stdout = tmpfile
-	starthere("testcommands", "./")
+	retcode := starthere("testcommands", "./")
 	os.Stdout = s
 	b, err := ioutil.ReadFile(tmpfile.Name())
 	if err != nil {
 		t.Error("Error in reading logs", err)
 	}
 	data := string(b)
+	if retcode != 0 {
+		t.Error("Test failed.", retcode, data)
+	}
 	if !strings.Contains(data, "Executing:  cat /etc/os-release") {
 		t.Error("Missing cat /etc/os-release", data)
 	}
@@ -35,13 +38,16 @@ func TestAWS(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 	s := os.Stdout
 	os.Stdout = tmpfile
-	starthere("testaws", "./")
+	retcode := starthere("testaws", "./")
 	os.Stdout = s
 	b, err := ioutil.ReadFile(tmpfile.Name())
 	if err != nil {
 		t.Error("Error in reading logs", err)
 	}
 	data := string(b)
+	if retcode != 0 {
+		t.Error("Test failed.", retcode, data)
+	}
 	if !strings.Contains(data, "Executing:  cat /etc/os-release") {
 		t.Error("Missing cat /etc/os-release", data)
 	}
