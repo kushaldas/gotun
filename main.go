@@ -24,7 +24,7 @@ func checkVariables() error {
 	} else if backend == "aws" {
 		viper.SetEnvPrefix("AWS")
 		viper.AutomaticEnv()
-		k := viper.GetString("KEY")
+		k := viper.GetString("USERKEY")
 		s := viper.GetString("SECRET")
 		if (k == "") || (s == "") {
 			return errors.New("Missing secret configuration value(s).")
