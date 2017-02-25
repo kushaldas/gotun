@@ -68,7 +68,7 @@ AWS based job
     AWS_SECURITYGROUPIDS:
         - "sg-groupid"
     AWS_REGION: "us-west-1"
-    KEY: "YOURKEY"
+    USERKEY: "YOURKEY"
     SECRET: "SECRET KEY PART"
     key: "PATH to the .pem file"
 
@@ -77,7 +77,7 @@ find subnet-id, security group ids for each region to work with.
 
 You can also set the following environment variables for the AWS job.
 
-- AWS_KEY
+- AWS_USERKEY
 - AWS_SECRET
 
 For remote systems
