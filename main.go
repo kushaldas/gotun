@@ -33,7 +33,7 @@ func checkVariables() error {
 	return nil
 }
 
-func starthere(jobname, config_dir string) {
+func starthere(jobname, config_dir string) int {
 	var vm TunirVM
 	var commands []string
 	var result ResultSet
@@ -43,7 +43,7 @@ func starthere(jobname, config_dir string) {
 	commandfile := filepath.Join(config_dir, fmt.Sprintf("%s.txt", jobname))
 	if _, err := os.Stat(commandfile); os.IsNotExist(err) {
 		fmt.Println("Missing commands file for job:", jobname)
-		os.Exit(100)
+		return 100
 	}
 	viper.SetConfigName(jobname)
 	viper.AddConfigPath(config_dir)
@@ -55,7 +55,7 @@ func starthere(jobname, config_dir string) {
 	err = checkVariables()
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(111)
+		return 111
 	}
 	viper.SetDefault("PORT", "22")
 	viper.SetDefault("USER", "fedora")
@@ -133,9 +133,9 @@ ERROR_NOIP:
 	}
 	printResultSet(result)
 	if !result.Status {
-		os.Exit(200)
+		return 200
 	}
-	os.Exit(0)
+	return 0
 }
 
 func createApp() *cli.App {
@@ -163,7 +163,8 @@ func createApp() *cli.App {
 			config_dir = "./"
 		}
 		if file_path != "" {
-			starthere(file_path, config_dir)
+			exitcode := starthere(file_path, config_dir)
+			os.Exit(exitcode)
 		}
 		return nil
 	}
