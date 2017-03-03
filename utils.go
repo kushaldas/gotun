@@ -58,7 +58,7 @@ type TunirVM struct {
 }
 
 func (t TunirVM) Delete() error {
-	if t.VMType == "openstack" {
+	if t.VMType == "openstack" && t.Server != nil{
 		res := servers.Delete(t.Client, t.Server.ID)
 		if t.CleanImage == true {
 			// Delete the image we uploaded
