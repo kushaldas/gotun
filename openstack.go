@@ -35,9 +35,14 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 	}
 	region := viper.GetString("OS_REGION_NAME")
 	provider, err := openstack.AuthenticatedClient(opts)
+	if err != nil {
+		return tvm, err
+	}
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: region})
-
+	if err != nil {
+		return tvm, err
+	}
 	vmflavor := viper.GetString("OS_FLAVOR")
 	imagename := viper.GetString("OS_IMAGE")
 	// Now let us find if we have to upload an image
@@ -105,7 +110,7 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 	}).Extract()
 	if err != nil {
 		fmt.Println("Unable to create server: ", err)
-		os.Exit(301)
+		return tvm, err
 	}
 	tvm.Server = server
 	tvm.Client = client
@@ -120,7 +125,8 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 		// There is an error in getting floating IP
 		fmt.Println(err)
 		tvm.Delete()
-		os.Exit(302)
+		tvm.Server = nil
+		return tvm, err
 	}
 	// Now let us assign a floating IP
 	floatingip.AssociateInstance(client, floatingip.AssociateOpts{
