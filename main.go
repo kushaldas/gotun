@@ -79,6 +79,8 @@ func starthere(jobname, config_dir string) int {
 			err = Poll(180, vm)
 			if err != nil {
 				fmt.Println("Failed to ssh into the vm.")
+				name := fmt.Sprintf("vm%d", i)
+				vmdict[name] = vm
 				goto ERROR_NOIP
 			}
 			// All good, add in the dict
@@ -103,6 +105,7 @@ func starthere(jobname, config_dir string) int {
 		err = Poll(300, vm)
 		if err != nil {
 			fmt.Println("Failed to ssh into the vm.")
+			vmdict["vm1"] = vm
 			goto ERROR_NOIP
 		}
 		vmdict["vm1"] = vm
