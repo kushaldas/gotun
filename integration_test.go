@@ -38,7 +38,7 @@ func TestAWS(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 	s := os.Stdout
 	os.Stdout = tmpfile
-	retcode := starthere("testaws", "./")
+	retcode := starthere("testaws", "./", "", "")
 	os.Stdout = s
 	b, err := ioutil.ReadFile(tmpfile.Name())
 	if err != nil {

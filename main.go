@@ -33,7 +33,7 @@ func checkVariables() error {
 	return nil
 }
 
-func starthere(jobname, config_dir string) int {
+func starthere(jobname, config_dir, amiid, region string) int {
 	var vm TunirVM
 	var commands []string
 	var result ResultSet
@@ -61,6 +61,8 @@ func starthere(jobname, config_dir string) int {
 	viper.SetDefault("USER", "fedora")
 	viper.SetDefault("NUMBER", 1)
 	viper.SetDefault("NODELETE", false)
+	viper.SetDefault("AWS_AMI", amiid)
+	viper.SetDefault("AWS_REGION", region)
 
 	backend := viper.GetString("BACKEND")
 	fmt.Println("Starts a new Tunir Job.\n")
@@ -158,15 +160,27 @@ func createApp() *cli.App {
 			Value: "",
 			Usage: "the directory having configuration (default current)",
 		},
+		cli.StringFlag{
+			Name:  "ami-id",
+			Value: "",
+			Usage: "the AMI ID for AWS jobs",
+		},
+		cli.StringFlag{
+			Name:  "region",
+			Value: "",
+			Usage: "Region name for AWS based job",
+		},
 	}
 	app.Action = func(c *cli.Context) error {
 		file_path := c.GlobalString("job")
 		config_dir := c.GlobalString("config-dir")
+		amiid  := c.GlobalString("ami-id")
+		region := c.GlobalString("region")
 		if config_dir == "" {
 			config_dir = "./"
 		}
 		if file_path != "" {
-			exitcode := starthere(file_path, config_dir)
+			exitcode := starthere(file_path, config_dir, amiid, region)
 			os.Exit(exitcode)
 		}
 		return nil
