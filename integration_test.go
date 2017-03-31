@@ -14,7 +14,7 @@ func TestOpenStack(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 	s := os.Stdout
 	os.Stdout = tmpfile
-	retcode := starthere("testcommands", "./")
+	retcode := starthere("testcommands", "./", "", "")
 	os.Stdout = s
 	b, err := ioutil.ReadFile(tmpfile.Name())
 	if err != nil {
