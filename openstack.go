@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"io/ioutil"
 )
 
 
@@ -22,9 +23,11 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 	var tvm TunirVM
 	tvm.VMType = "openstack"
 	tvm.Hostname = vmname
+	var userdata []byte
 	// If no config is found, use the default(s)
 	viper.SetDefault("OS_REGION_NAME", "RegionOne")
 	viper.SetDefault("OS_FLAVOR", "m1.medium")
+	viper.SetDefault("user-data", "")
 	viper.SetEnvPrefix("OS")
 	viper.AutomaticEnv()
 	opts := gophercloud.AuthOptions{
@@ -92,11 +95,23 @@ func BootInstanceOS(vmname string) (TunirVM, error) {
 	keypair := viper.GetString("OS_KEYPAIR")
 	security_groups := viper.GetStringSlice("OS_SECURITY_GROUPS")
 
+	// Read User-data file if provided
+	ufile := viper.GetString("user-data")
+	if ufile != "" {
+		// We have userdata
+		userdata, err = ioutil.ReadFile(ufile)
+		if err!= nil {
+			fmt.Println("Error reading the user-data file.")
+			fmt.Println("Going ahead without user-data.")
+		}
+	}
+
 	sOpts := servers.CreateOpts{
 		Name:           vmname,
 		FlavorName:     vmflavor,
 		ImageName:      imagename,
 		SecurityGroups: security_groups,
+		UserData: userdata,
 	}
 	sOpts.Networks = []servers.Network{
 		{
