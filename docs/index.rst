@@ -17,6 +17,7 @@ Contents:
    install
    configuration
    jobfile
+   examples
 
 
 
