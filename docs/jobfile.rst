@@ -35,6 +35,16 @@ Example::
     POLL
     ls /
 
+Coping files over
+------------------
+
+gotun can copy files over to any VM using scp. The following is an example
+where we are copying a binary file into bin directory inside home of the user
+on vm1.
+::
+
+    COPY: localfile.bin vm1:./bin/
+
 Multiple VM based tests
 -------------------------
 
