@@ -43,6 +43,20 @@ You can also set the following environment variables for the OpenStack job.
 - OS_USERNAME
 - OS_PASSWORD
 
+User data on OpenStack
+-----------------------
+
+You can provide path to a cloud-config userdata file in the configuration file. The following
+line expects a proper YAML file in the given location.
+
+::
+
+    user-data: "/home/user/work/data.yml"
+
+You can learn more about cloud-init (userdata) examples
+`here <https://www.zetta.io/en/help/articles-tutorials/cloud-init-reference/>`_.
+
+
 
 Multiple VM(s) on OpenStack
 ----------------------------
@@ -79,6 +93,12 @@ You can also set the following environment variables for the AWS job.
 
 - AWS_USERKEY
 - AWS_SECRET
+
+For AWS based jobs, one can also pass the *AMI_ID* and *REGION* by command line arguments.
+The following two new flags were added for the same.
+
+       --ami-id value      the AMI ID for AWS jobs
+       --region value      Region name for AWS based jobs
 
 For remote systems
 -------------------
